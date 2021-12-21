@@ -1,0 +1,79 @@
+﻿<Window x:Class="ActionRecorder.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:ActionRecorder"
+        mc:Ignorable="d"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:fw="clr-namespace:SourceChord.FluentWPF;assembly=FluentWPF"
+        fw:AcrylicWindow.Enabled="True"
+        MouseDown="Window_MouseDown" 
+        ResizeMode="NoResize" 
+        WindowStartupLocation="CenterScreen"
+        Title="Action Recorder" Height="600" Width="1080" AllowsTransparency="True" WindowStyle="None">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="350"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid fw:PointerTracker.Enabled="True" Background="#FF111111">
+            <StackPanel>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Margin="15" FontSize="16" Text="Action Recorder" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
+                </StackPanel>
+                
+                <TextBlock Text="Options" Margin="15" FontWeight="DemiBold" Foreground="#FFD6D6D6"/>
+                <ListView FontSize="12" Background="#FF1B1B1B" BorderBrush="#FF2B2B2B">
+                    <ListViewItem Padding="0" Focusable="False" Foreground="#FFC1C1C1" MouseUp="PlayOrStop">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon x:Name="_playIcon" Kind="PlayCircle" Margin="15"/>
+                            <TextBlock x:Name="_playTxt" Text="Play" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ListViewItem>
+                    <ListViewItem Padding="0" Focusable="False" MouseUp="Record" Foreground="#FFC1C1C1">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon x:Name="_recordIcon" Kind="Record" Margin="15"/>
+                            <TextBlock Text="Record" x:Name="_recordTxt" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ListViewItem>
+                </ListView>
+                
+                <TextBlock Text="Import" Margin="15" FontWeight="DemiBold" Foreground="#FFD6D6D6"/>
+                <ListView FontSize="12" Background="#FF1B1B1B" BorderBrush="#FF2B2B2B">
+                    <ListViewItem Padding="0" Focusable="False" MouseUp="ImportAction" Foreground="#FFC1C1C1">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="FileImportOutline" Margin="15"/>
+                            <TextBlock Text="Import Action File" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ListViewItem>
+                </ListView>
+                <TextBlock Text="Export" Margin="15" FontWeight="DemiBold" Foreground="#FFD6D6D6"/>
+                <ListView FontSize="12" Background="#FF1B1B1B" BorderBrush="#FF2B2B2B">
+                    <ListViewItem Padding="1" Focusable="False" MouseUp="ExportAction" Foreground="#FFC1C1C1">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="FileExportOutline" Margin="15"/>
+                            <TextBlock Text="Export Action File" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ListViewItem>
+                </ListView>
+                <ListView Height="151" Background="{x:Null}" Foreground="{x:Null}" BorderBrush="{x:Null}"></ListView>
+                <ListView FontSize="14" VerticalAlignment="Bottom" Background="#FF0C0C0C" BorderBrush="#FF080808" Foreground="{x:Null}">
+                    <ListViewItem Padding="1" Focusable="False" MouseUp="Close" Foreground="#FFC1C1C1">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="ExitToApp" Margin="15"/>
+                            <TextBlock Margin="0,0,0,1" Text="Close" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </ListViewItem>
+                </ListView>
+            </StackPanel>
+        </Grid>
+        <Grid Grid.Column="1" Background="#FF0E0E0E">
+            <TextBlock FontWeight="Bold" FontSize="16" Text="Log" VerticalAlignment="Center" Margin="25,10,25,563" Foreground="#FFCBCBCB" Height="25"/>
+            <StackPanel Orientation="Vertical">
+            <TextBox x:Name="_logger" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" Focusable="false" IsReadOnly="true" Padding="15" Height="452" Margin="25,41,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="680" Background="#FF131313" Foreground="#FF9B9B9B" BorderBrush="#FF2B2B2B" FontStyle="Italic"/>
+            <TextBox x:Name="_command" MouseUp="OnCommandClick" KeyUp="OnCommand" TextWrapping="NoWrap" Text="/command" Margin="25, 10, 25, 0" Padding="7, 2, 7, 2" Height="25" Background="#FF131313" Foreground="#FF9B9B9B" BorderBrush="#FF2B2B2B"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
