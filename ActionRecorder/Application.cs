@@ -4,12 +4,12 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using System.Windows.Threading;
 using ActionRecorder.scheduler;
 using ActionRecorder.structure;
 using Gma.System.MouseKeyHook;
 using Loamen.KeyMouseHook;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace ActionRecorder
 {
@@ -29,13 +29,13 @@ namespace ActionRecorder
         private Thread _playbackThread;
 
         private ActionFile _actionFile = null;
-        
+
         private readonly KeyMouseFactory _eventHookFactory = new KeyMouseFactory(Hook.GlobalEvents());
         private readonly KeyboardWatcher _keyboardWatcher;
         private readonly KeyboardWatcher _shortcutWatcher;
         private readonly MouseWatcher _mouseWatcher;
-        
-        
+
+
         public Application(MainWindow mainWindow)
         {
             _instance = this;
@@ -77,7 +77,7 @@ namespace ActionRecorder
             _keyboardWatcher.Start(events);
             _mouseWatcher.Start(events);
         }
-        
+
         private void ShortcutHandler(object sender, MacroEvent e)
         {
             if (e.KeyMouseEventType != MacroEventType.KeyUp) return;
@@ -92,7 +92,7 @@ namespace ActionRecorder
                     break;
             }
         }
-        
+
         private void GlobalHookHandler(object sender, MacroEvent e)
         {
             if (!isRecording)
@@ -111,6 +111,22 @@ namespace ActionRecorder
             }
             var actionCount = _actionFile.Actions.Count;
             var lastAction = actionCount < 1 ? null : _actionFile.Actions[actionCount - 1];
+
+            if (e.EventArgs is MouseEventExtArgs)
+            {
+                MouseEventExtArgs extArgs = (MouseEventExtArgs)e.EventArgs;
+                e.EventArgs = new MouseEventArgs(extArgs.Button, extArgs.Clicks, extArgs.X, extArgs.Y, extArgs.Delta);
+            }
+            else if (e.EventArgs is KeyEventArgsExt)
+            {
+                KeyEventArgsExt extArgs = (KeyEventArgsExt)e.EventArgs;
+                e.EventArgs = new KeyEventArgs(extArgs.KeyData);
+            }
+            else if (e.EventArgs is KeyPressEventArgsExt)
+            {
+                KeyPressEventArgsExt extArgs = (KeyPressEventArgsExt)e.EventArgs;
+                e.EventArgs = new KeyPressEventArgs(extArgs.KeyChar);
+            }
             _actionFile.Actions.Add(e);
             var timeSinceLastEvent = lastAction == null ? "0" : lastAction.TimeSinceLastEvent.ToString();
             Log($"[A:{actionCount}] [LT:{timeSinceLastEvent}] {e.KeyMouseEventType.ToString()} recorded.");
@@ -182,7 +198,9 @@ namespace ActionRecorder
                         try
                         {
                             var content = Encoding.Default.GetString(Convert.FromBase64String(fileContent));
-                            _actionFile = JsonConvert.DeserializeObject<ActionFile>(content);
+                            //_actionFile = JsonConvert.DeserializeObject<ActionFile>(content);
+                            JObject jsonObject = JObject.Parse(content);
+                            _actionFile = Parse(jsonObject);
                             Log("Action File Loaded and able to play!");
                         }
                         catch (Exception e)
@@ -193,7 +211,52 @@ namespace ActionRecorder
                 }
             }
         }
-        
+
+        public ActionFile Parse(JObject jsonObj)
+        {
+            ActionFile actionFile = new ActionFile();
+
+            JArray jActions = (JArray)jsonObj["Actions"];
+
+            actionFile.Name = (string)jsonObj["Name"];
+            actionFile.RecordedDate = (DateTime)jsonObj["RecordedDate"];
+            actionFile.Actions = jActions.Select(token =>
+            {
+                MacroEventType macroEventType = JsonConvert.DeserializeObject<MacroEventType>(token["KeyMouseEventType"].ToString());
+
+                EventArgs eventArgs = null;
+                switch (macroEventType)
+                {
+                    case MacroEventType.MouseMove:
+                    case MacroEventType.MouseMoveExt:
+                    case MacroEventType.MouseDown:
+                    case MacroEventType.MouseDownExt:
+                    case MacroEventType.MouseUp:
+                    case MacroEventType.MouseUpExt:
+                    case MacroEventType.MouseWheel:
+                    case MacroEventType.MouseWheelExt:
+                    case MacroEventType.MouseDragStarted:
+                    case MacroEventType.MouseDragFinished:
+                    case MacroEventType.MouseClick:
+                    case MacroEventType.MouseDoubleClick:
+                        eventArgs = JsonConvert.DeserializeObject<MouseEventArgs>(token["EventArgs"].ToString());
+                        break;
+                    case MacroEventType.KeyUp:
+                    case MacroEventType.KeyDown:
+                        eventArgs = JsonConvert.DeserializeObject<KeyEventArgs>(token["EventArgs"].ToString());
+                        break;
+                    case MacroEventType.KeyPress:
+                        eventArgs = JsonConvert.DeserializeObject<KeyPressEventArgs>(token["EventArgs"].ToString());
+                        break;
+                }
+                int timeSinceLastEvent = (int)token["TimeSinceLastEvent"];
+                return new MacroEvent(macroEventType, eventArgs, timeSinceLastEvent);
+            }).ToList();
+            actionFile.Loop = (bool)jsonObj["Loop"];
+
+            return actionFile;
+        }
+
         public void ExportAction()
         {
             if (_actionFile == null)
@@ -204,7 +267,7 @@ namespace ActionRecorder
             SaveFileDialog saveFileDialog1 = new SaveFileDialog();
             saveFileDialog1.Filter = @"Recorded Action|*.ra";
             saveFileDialog1.Title = @"Exporting...";
-            saveFileDialog1.RestoreDirectory = true ;
+            saveFileDialog1.RestoreDirectory = true;
 
             if (saveFileDialog1.ShowDialog() != DialogResult.OK) return;
             Stream myStream;
@@ -212,11 +275,11 @@ namespace ActionRecorder
             {
                 var content = JsonConvert.SerializeObject(_actionFile);
                 content = Convert.ToBase64String(Encoding.Default.GetBytes(content), 0, content.Length);
-                myStream.Write(Encoding.Default.GetBytes(content),0, content.Length);
+                myStream.Write(Encoding.Default.GetBytes(content), 0, content.Length);
                 myStream.Close();
             }
         }
-        
+
         public bool Running
         {
             get => _running;

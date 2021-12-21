@@ -12,7 +12,7 @@ namespace ActionRecorder.structure
         public DateTime RecordedDate = DateTime.Now;
         public List<MacroEvent> Actions = new List<MacroEvent>();
         public bool Loop = true;
-        
+
         public int TotalTime => Actions.Sum(x => x.TimeSinceLastEvent);
     }
 }
