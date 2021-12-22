@@ -72,7 +72,7 @@
             <TextBlock FontWeight="Bold" FontSize="16" Text="Log" VerticalAlignment="Center" Margin="25,10,25,563" Foreground="#FFCBCBCB" Height="25"/>
             <StackPanel Orientation="Vertical">
             <TextBox x:Name="_logger" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" Focusable="false" IsReadOnly="true" Padding="15" Height="452" Margin="25,41,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="680" Background="#FF131313" Foreground="#FF9B9B9B" BorderBrush="#FF2B2B2B" FontStyle="Italic"/>
-            <TextBox x:Name="_command" MouseUp="OnCommandClick" KeyUp="OnCommand" TextWrapping="NoWrap" Text="/command" Margin="25, 10, 25, 0" Padding="7, 2, 7, 2" Height="25" Background="#FF131313" Foreground="#FF9B9B9B" BorderBrush="#FF2B2B2B"/>
+            <TextBox x:Name="_command" MouseDown="OnCommandClick" KeyUp="OnCommand" TextWrapping="NoWrap" Text="command" Margin="25, 10, 25, 0" Padding="7, 2, 7, 2" Height="25" Background="#FF131313" Foreground="#FF9B9B9B" BorderBrush="#FF2B2B2B"/>
             </StackPanel>
         </Grid>
     </Grid>

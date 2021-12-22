@@ -106,6 +106,8 @@ namespace ActionRecorder
                     _logger.AppendText(System.Environment.NewLine);
                 }
                 _logger.AppendText(message);
+                _logger.SelectionStart = _logger.Text.Length;
+                _logger.ScrollToEnd();
             });
         }
         
@@ -119,9 +121,8 @@ namespace ActionRecorder
         {
             if (e.Key == Key.Enter)
             {
-                if (!_command.Text.StartsWith("/")) return;
                 var args = new Queue(_command.Text.Split(' ').ToList());
-                var command = args.Dequeue().ToString().Replace("/", "");
+                var command = args.Dequeue().ToString();
                 switch (command.ToLower())
                 {
                     case "loop":
@@ -160,7 +161,7 @@ namespace ActionRecorder
 
         private void OnCommandClick(object sender, MouseButtonEventArgs e)
         {
-            if (_command.Text.ToLower().StartsWith("/command"))
+            if (_command.Text.ToLower().StartsWith("command"))
             {
                 _command.Text = "";
             }
