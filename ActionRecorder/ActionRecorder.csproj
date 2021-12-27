@@ -80,6 +80,8 @@
     <Compile Include="scheduler\Scheduler.cs" />
     <Compile Include="scheduler\Task.cs" />
     <Compile Include="structure\ActionFile.cs" />
+    <Compile Include="util\ActionReader.cs" />
+    <Compile Include="util\ActionWriter.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>

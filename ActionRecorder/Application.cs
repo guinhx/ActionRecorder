@@ -6,6 +6,7 @@ using System.Threading;
 using System.Windows.Forms;
 using ActionRecorder.scheduler;
 using ActionRecorder.structure;
+using ActionRecorder.util;
 using Gma.System.MouseKeyHook;
 using Loamen.KeyMouseHook;
 using Newtonsoft.Json;
@@ -27,6 +28,8 @@ namespace ActionRecorder
         private bool recordingWithLoop = false;
 
         private Thread _playbackThread;
+        private Thread _parseThread;
+        private Thread _exportThread;
 
         private ActionFile _actionFile = null;
 
@@ -175,7 +178,7 @@ namespace ActionRecorder
 
         private void OnPlayback(object sender, MacroEvent e)
         {
-            Log($"Simulating {e.KeyMouseEventType.ToString()}!");
+            Log($"Simulating {e.KeyMouseEventType}!");
         }
 
         public void ImportAction()
@@ -191,70 +194,81 @@ namespace ActionRecorder
                     string fileContent = String.Empty;
                     var fileStream = openFileDialog.OpenFile();
 
-                    using (StreamReader reader = new StreamReader(fileStream))
+                    using (StreamReader reader = new StreamReader(fileStream, Encoding.UTF8))
                     {
                         fileContent = reader.ReadToEnd();
                         Log($"Trying to import Action File from {filePath}...");
                         try
                         {
-                            var content = Encoding.Default.GetString(Convert.FromBase64String(fileContent));
-                            //_actionFile = JsonConvert.DeserializeObject<ActionFile>(content);
-                            JObject jsonObject = JObject.Parse(content);
-                            _actionFile = Parse(jsonObject);
-                            Log("Action File Loaded and able to play!");
+                            Parse(Convert.FromBase64String(fileContent));
                         }
                         catch (Exception e)
                         {
                             Error($"Not is possible to load action file, reason: {e.Message}");
+                            _parseThread?.Abort();
                         }
                     }
                 }
             }
         }
 
-        public ActionFile Parse(JObject jsonObj)
+        public void Parse(byte[] content)
         {
-            ActionFile actionFile = new ActionFile();
+            _parseThread?.Abort();
+            _parseThread = new Thread(() => {
+                ActionFile actionFile = new ActionFile();
 
-            JArray jActions = (JArray)jsonObj["Actions"];
-
-            actionFile.Name = (string)jsonObj["Name"];
-            actionFile.RecordedDate = (DateTime)jsonObj["RecordedDate"];
-            actionFile.Actions = jActions.Select(token =>
-            {
-                MacroEventType macroEventType = JsonConvert.DeserializeObject<MacroEventType>(token["KeyMouseEventType"].ToString());
-
-                EventArgs eventArgs = null;
-                switch (macroEventType)
+                using (MemoryStream stream = new MemoryStream(content))
                 {
-                    case MacroEventType.MouseMove:
-                    case MacroEventType.MouseMoveExt:
-                    case MacroEventType.MouseDown:
-                    case MacroEventType.MouseDownExt:
-                    case MacroEventType.MouseUp:
-                    case MacroEventType.MouseUpExt:
-                    case MacroEventType.MouseWheel:
-                    case MacroEventType.MouseWheelExt:
-                    case MacroEventType.MouseDragStarted:
-                    case MacroEventType.MouseDragFinished:
-                    case MacroEventType.MouseClick:
-                    case MacroEventType.MouseDoubleClick:
-                        eventArgs = JsonConvert.DeserializeObject<MouseEventArgs>(token["EventArgs"].ToString());
-                        break;
-                    case MacroEventType.KeyUp:
-                    case MacroEventType.KeyDown:
-                        eventArgs = JsonConvert.DeserializeObject<KeyEventArgs>(token["EventArgs"].ToString());
-                        break;
-                    case MacroEventType.KeyPress:
-                        eventArgs = JsonConvert.DeserializeObject<KeyPressEventArgs>(token["EventArgs"].ToString());
-                        break;
+                    using (ActionReader reader = new ActionReader(stream))
+                    {
+                        actionFile.Name = reader.ReadString();
+                        actionFile.RecordedDate = DateTime.FromBinary(reader.ReadInt64());
+                        actionFile.Loop = reader.ReadBoolean();
+                        int countMacros = reader.ReadInt32();
+                        while (countMacros-- != 0)
+                        {
+                            MacroEventType eventType = (MacroEventType)Enum.Parse(typeof(MacroEventType), reader.ReadUInt16().ToString());
+                            EventArgs eventArgs = null;
+                            switch (eventType)
+                            {
+                                case MacroEventType.MouseMove:
+                                case MacroEventType.MouseMoveExt:
+                                case MacroEventType.MouseDown:
+                                case MacroEventType.MouseDownExt:
+                                case MacroEventType.MouseUp:
+                                case MacroEventType.MouseUpExt:
+                                case MacroEventType.MouseWheel:
+                                case MacroEventType.MouseWheelExt:
+                                case MacroEventType.MouseDragStarted:
+                                case MacroEventType.MouseDragFinished:
+                                case MacroEventType.MouseClick:
+                                case MacroEventType.MouseDoubleClick:
+                                    eventArgs = new MouseEventArgs(
+                                        (MouseButtons)Enum.Parse(typeof(MouseButtons), reader.ReadUInt32().ToString()),
+                                        reader.ReadInt32(),
+                                        reader.ReadInt32(),
+                                        reader.ReadInt32(),
+                                        reader.ReadInt32()
+                                        );
+                                    break;
+                                case MacroEventType.KeyUp:
+                                case MacroEventType.KeyDown:
+                                    eventArgs = new KeyEventArgs((Keys)Enum.Parse(typeof(Keys), reader.ReadInt32().ToString()));
+                                    break;
+                                case MacroEventType.KeyPress:
+                                    eventArgs = new KeyPressEventArgs(reader.ReadChar());
+                                    break;
+                            }
+                            actionFile.Actions.Add(new MacroEvent(eventType, eventArgs, reader.ReadInt32()));
+                        }
+                    }
                 }
-                int timeSinceLastEvent = (int)token["TimeSinceLastEvent"];
-                return new MacroEvent(macroEventType, eventArgs, timeSinceLastEvent);
-            }).ToList();
-            actionFile.Loop = (bool)jsonObj["Loop"];
-
-            return actionFile;
+                _actionFile = actionFile;
+                Log("Action File Loaded and able to play!");
+                _parseThread.Abort();
+            });
+            _parseThread?.Start();
         }
 
         public void ExportAction()
@@ -270,14 +284,71 @@ namespace ActionRecorder
             saveFileDialog1.RestoreDirectory = true;
 
             if (saveFileDialog1.ShowDialog() != DialogResult.OK) return;
-            Stream myStream;
-            if ((myStream = saveFileDialog1.OpenFile()) != null)
+
+            _exportThread?.Abort();
+            _exportThread = new Thread(() =>
             {
-                var content = JsonConvert.SerializeObject(_actionFile);
-                content = Convert.ToBase64String(Encoding.Default.GetBytes(content), 0, content.Length);
-                myStream.Write(Encoding.Default.GetBytes(content), 0, content.Length);
-                myStream.Close();
-            }
+                using (MemoryStream stream = new MemoryStream())
+                {
+                    using (ActionWriter bw = new ActionWriter(stream, Encoding.UTF8))
+                    {
+                        bw.Write(_actionFile.Name);
+                        bw.Write(_actionFile.RecordedDate.ToBinary());
+                        bw.Write(_actionFile.Loop);
+                        bw.Write(_actionFile.Actions.Count);
+
+                        foreach (MacroEvent macroEvent in _actionFile.Actions)
+                        {
+                            bw.Write((ushort)macroEvent.KeyMouseEventType);
+                            switch (macroEvent.KeyMouseEventType)
+                            {
+                                case MacroEventType.MouseMove:
+                                case MacroEventType.MouseMoveExt:
+                                case MacroEventType.MouseDown:
+                                case MacroEventType.MouseDownExt:
+                                case MacroEventType.MouseUp:
+                                case MacroEventType.MouseUpExt:
+                                case MacroEventType.MouseWheel:
+                                case MacroEventType.MouseWheelExt:
+                                case MacroEventType.MouseDragStarted:
+                                case MacroEventType.MouseDragFinished:
+                                case MacroEventType.MouseClick:
+                                case MacroEventType.MouseDoubleClick:
+                                    var mouseEvent = (MouseEventArgs)macroEvent.EventArgs;
+                                    bw.Write((uint)mouseEvent.Button);
+                                    bw.Write(mouseEvent.Clicks);
+                                    bw.Write(mouseEvent.X);
+                                    bw.Write(mouseEvent.Y);
+                                    bw.Write(mouseEvent.Delta);
+                                    break;
+                                case MacroEventType.KeyUp:
+                                case MacroEventType.KeyDown:
+                                    var keyEvent = (KeyEventArgs)macroEvent.EventArgs;
+                                    bw.Write((int)keyEvent.KeyData);
+                                    break;
+                                case MacroEventType.KeyPress:
+                                    var keyPressEvent = (KeyPressEventArgs)macroEvent.EventArgs;
+                                    bw.Write(keyPressEvent.KeyChar);
+                                    break;
+                            }
+                            bw.Write(macroEvent.TimeSinceLastEvent);
+                        }
+                        stream.Position = 0;
+                        using (StreamReader streamReader = new StreamReader(stream))
+                        {
+                            using (Stream fileStream = saveFileDialog1.OpenFile())
+                            {
+                                var content = streamReader.ReadToEnd();
+                                content = Convert.ToBase64String(Encoding.UTF8.GetBytes(content), 0, content.Length);
+                                fileStream.Write(Encoding.UTF8.GetBytes(content), 0, content.Length);
+                            }
+                        }
+                    }
+                }
+                Log("Exported!");
+                _exportThread.Abort();
+            });
+            _exportThread?.Start();
         }
 
         public bool Running
