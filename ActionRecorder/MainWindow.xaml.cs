@@ -98,6 +98,7 @@ namespace ActionRecorder
         
         public void LogMessage(string message)
         {
+            // TODO: too many lines cause lag
             _logger.Dispatcher.Invoke(() =>
             {
                 var lines = _logger.Text.Split($"{System.Environment.NewLine}".ToArray());
