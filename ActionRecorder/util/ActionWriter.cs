@@ -49,7 +49,7 @@ namespace ActionRecorder.util
 
         public override void Write(ulong value)
         {
-            Write((byte)(value >> 54));
+            Write((byte)(value >> 56));
             Write((byte)(value >> 48));
             Write((byte)(value >> 40));
             Write((byte)(value >> 32));

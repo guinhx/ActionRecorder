@@ -59,7 +59,7 @@ namespace ActionRecorder.util
         public override ulong ReadUInt64()
         {
             ulong value = 0;
-            value |= ((ulong)ReadByte() << 54);
+            value |= ((ulong)ReadByte() << 56);
             value |= ((ulong)ReadByte() << 48);
             value |= ((ulong)ReadByte() << 40);
             value |= ((ulong)ReadByte() << 32);
