@@ -360,7 +360,10 @@ namespace ActionRecorder
                             }
                             bw.Write(macroEvent.TimeSinceLastEvent);
                         }
-                        File.WriteAllBytes(saveFileDialog1.FileName, stream.GetBuffer());
+                        using (Stream fs = saveFileDialog1.OpenFile())
+                        {
+                            fs.Write(stream.GetBuffer(), 0, (int)stream.Position);
+                        }
                     }
                 }
                 Log("Exported!");
