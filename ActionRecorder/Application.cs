@@ -155,7 +155,6 @@ namespace ActionRecorder
                     _playbackThread = new Thread(() =>
                     {
                         var sim = new InputSimulator();
-                        _simulateAction = 0;
                         sim.OnPlayback += OnPlayback;
                         if (_actionFile.Loop)
                         {
@@ -163,6 +162,7 @@ namespace ActionRecorder
                             {
                                 try
                                 {
+                                    _simulateAction = 0;
                                     sim.PlayBack(_actionFile.Actions);
                                 }
                                 catch (NullReferenceException)
@@ -175,10 +175,10 @@ namespace ActionRecorder
                         {
                             try
                             {
+                                _simulateAction = 0;
                                 sim.PlayBack(_actionFile.Actions);
                             }
-                            catch (NullReferenceException)
-                            { }
+                            catch (NullReferenceException) { }
                             Thread.Sleep(200);
                             isPlaying = false;
                             _mainWindow.Update();
