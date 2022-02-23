@@ -28,8 +28,8 @@ The project is currently meeting the initial requirement, and I've now also reac
 - Modern UI design made with ❤.
 
 ## Next to-do list
-[] Responsive window width/height for diferent screens.
-[] Optimization when recording action.
+[ ] Responsive window width/height for diferent screens.
+[ ] Optimization when recording action.
 
 ## Feedback
 
