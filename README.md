@@ -20,12 +20,16 @@ The project is currently meeting the initial requirement, and I've now also reac
 ## Features
 
 - Record keyboard and cursor actions.
-- Record actions to play in loop using ``/loop [args]`` command.
+- Record actions to play in loop using ``loop [args]`` command.
 - Play or stop previous or imported actions recorded.
 - Fully open-source.
 - Export or import recorded actions.
-- Clear log console using ``/clear`` command.
+- Clear log console using ``clear`` command.
 - Modern UI design made with ❤.
+
+## Next to-do list
+[] Responsive window width/height for diferent screens.
+[] Optimization when recording action.
 
 ## Feedback
 
