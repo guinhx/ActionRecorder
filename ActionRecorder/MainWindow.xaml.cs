@@ -1,8 +1,10 @@
-﻿using System;
-using System.Collections;
-using System.Linq;
+﻿using MaterialDesignThemes.Wpf;
+using System;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
-using MaterialDesignThemes.Wpf;
+using System.Windows.Threading;
 
 namespace ActionRecorder
 {
@@ -11,16 +13,18 @@ namespace ActionRecorder
     /// </summary>
     public partial class MainWindow
     {
-        private Application _application;
+        private readonly Application _application;
+
         public MainWindow()
         {
             InitializeComponent();
             _application = new Application(this);
+            Update();
         }
-        
+
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
         {
-            if(e.LeftButton == MouseButtonState.Pressed)
+            if (e.LeftButton == MouseButtonState.Pressed)
             {
                 DragMove();
             }
@@ -28,28 +32,64 @@ namespace ActionRecorder
 
         public void Update()
         {
+            if (_application == null)
+                return;
+
             Dispatcher.Invoke(() =>
             {
                 if (_application.IsRecording)
                 {
                     _recordIcon.Kind = PackIconKind.Stop;
-                    _recordTxt.Text = "Stop Recording";
+                    _recordTxt.Text = $"Stop Recording ({Application.RECORD_KEY_HOOK})";
                 }
                 else
                 {
                     _recordIcon.Kind = PackIconKind.Record;
-                    _recordTxt.Text = "Record";   
+                    _recordTxt.Text = $"Record ({Application.RECORD_KEY_HOOK})";
                 }
-            
+
                 if (_application.IsPlaying)
                 {
                     _playIcon.Kind = PackIconKind.Stop;
-                    _playTxt.Text = "Stop";
+                    _playTxt.Text = $"Stop ({Application.PLAY_KEY_HOOK})";
                 }
                 else
                 {
                     _playIcon.Kind = PackIconKind.PlayCircle;
-                    _playTxt.Text = "Play";
+                    _playTxt.Text = $"Play ({Application.PLAY_KEY_HOOK})";
+                }
+
+                _loopCheckBox.IsChecked = _application.Loop;
+
+                _suppressMouseMovePathCheckBox.IsChecked = _application.SuppressMouseMovePath;
+
+                var speedType = ((ComboBoxItem)_speedType.SelectedValue).Content.ToString();
+
+                if (speedType == "Multiplier")
+                {
+
+                    _application.SpeedMultiplier = Math.Round(Math.Pow(_speedMultiplier.Value / 50, 2.33), 2); // Non linear slider
+                    _application.SpeedMultiplier = _application.SpeedMultiplier < .01 ? .01 : _application.SpeedMultiplier > 5 ? 5 : _application.SpeedMultiplier;
+                    _speedMultiplierText.Content = $"Action Elapsed Time x {_application.SpeedMultiplier}";
+                    _speedMultiplierContainer.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    _speedMultiplierContainer.Visibility = Visibility.Collapsed;
+                    _application.SpeedMultiplier = null;
+                }
+
+                if (speedType == "Fixed")
+                {
+                    _application.FixedSpeed = (int)Math.Round(Math.Pow(_speedFixed.Value, 2.924) / 70); // Non linear slider
+                    _application.FixedSpeed = _application.FixedSpeed < 1 ? 1 : _application.FixedSpeed > 10000 ? 10000 : _application.FixedSpeed;
+                    _speedFixedText.Content = $"Action Elapsed Time {_application.FixedSpeed}ms";
+                    _speedFixedContainer.Visibility = Visibility.Visible;
+                }
+                else
+                {
+                    _speedFixedContainer.Visibility = Visibility.Collapsed;
+                    _application.FixedSpeed = null;
                 }
             });
         }
@@ -58,114 +98,52 @@ namespace ActionRecorder
         {
             _application.Record();
             Update();
-            if (_application.IsRecording)
-            {
-                _application.Info("You are now recording...");
-            }
         }
-        
-        private void Record(object sender, MouseButtonEventArgs e)
-        {
+
+        private void OnClickRecord(object sender, RoutedEventArgs e) =>
             RecordHook();
-        }
 
         public void PlayOrStopHook()
         {
             _application.Playback();
             Update();
-            if (_application.IsPlaying)
-            {
-                _application.Info("You are now playing...");
-            }
         }
-        
-        private void PlayOrStop(object sender, MouseButtonEventArgs e)
-        {
+
+        private void OnClickPlayOrStop(object sender, RoutedEventArgs e) =>
             PlayOrStopHook();
-        }
 
-        private void ImportAction(object sender, MouseButtonEventArgs e)
-        {
+        private void OnClickImport(object sender, RoutedEventArgs e) =>
             _application.ImportAction();
-        }
 
-        private void ExportAction(object sender, MouseButtonEventArgs e)
-        {
+        private void OnClickExport(object sender, RoutedEventArgs e) =>
             _application.ExportAction();
-        }
-        
-        public void ClearLog() => _logger.Clear();
-        
-        public void LogMessage(string message)
-        {
-            // TODO: too many lines cause lag
-            _logger.Dispatcher.Invoke(() =>
+
+        public void ClearLog() =>
+            _logger.Clear();
+
+        public async Task LogMessage(string message) =>
+            await Task.Run(() => _logger.Dispatcher.Invoke(() =>
             {
-                var lines = _logger.Text.Split($"{System.Environment.NewLine}".ToArray());
-                if (lines.Length > 0 && _logger.Text.Length > 0)
-                {
-                    _logger.AppendText(System.Environment.NewLine);
-                }
-                _logger.AppendText(message);
-                _logger.SelectionStart = _logger.Text.Length;
+                _logger.AppendText(message + Environment.NewLine);
                 _logger.ScrollToEnd();
-            });
-        }
-        
-        private void Close(object sender, MouseButtonEventArgs e)
-        {
-            Application.Instance.Running = false;
+            }, DispatcherPriority.Background));
+
+        private void Close(object sender, MouseButtonEventArgs e) =>
             System.Windows.Application.Current.Shutdown();
-        }
 
-        private void OnCommand(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Enter)
-            {
-                var args = new Queue(_command.Text.Split(' ').ToList());
-                var command = args.Dequeue().ToString();
-                switch (command.ToLower())
-                {
-                    case "loop":
-                        if (args.Count > 0)
-                        {
-                            try
-                            {
-                                _application.RecordWithLoop = bool.Parse(args.Peek().ToString());
-                            }
-                            catch (Exception ignored)
-                            {
-                                // ignored
-                            }
-                        }
-                        else
-                        {
-                            _application.RecordWithLoop = !_application.RecordWithLoop;
-                        }
+        private void OnClickLoop(object sender, RoutedEventArgs e) =>
+            _application.Loop = !_application.Loop;
 
-                        if (_application.RecordWithLoop)
-                        {
-                            _application.Log("When you record an next action list, the same can be reproduced in loop.");
-                        }
-                        else
-                        {
-                            _application.Log("When you record an next action list, the same cannot be reproduced in loop.");
-                        }
-                        break;
-                    case "clear":
-                        ClearLog();
-                        break;
-                }
-                _command.Text = "";
-            }
-        }
+        private void OnClickSuppressMouseMovePath(object sender, RoutedEventArgs e) =>
+            _application.SuppressMouseMovePath = !_application.SuppressMouseMovePath;
 
-        private void OnCommandClick(object sender, MouseButtonEventArgs e)
-        {
-            if (_command.Text.ToLower().StartsWith("command"))
-            {
-                _command.Text = "";
-            }
-        }
+        private void OnChangeSpeedMultiplier(object sender, RoutedPropertyChangedEventArgs<double> e) =>
+            Update();
+
+        private void OnChangeSpeedType(object sender, SelectionChangedEventArgs e) =>
+            Update();
+
+        private void OnChangeSpeedFixed(object sender, RoutedPropertyChangedEventArgs<double> e) =>
+            Update();
     }
 }

@@ -12,67 +12,110 @@
         ResizeMode="NoResize" 
         WindowStartupLocation="CenterScreen"
         Title="Action Recorder" Height="600" Width="1080" AllowsTransparency="True" WindowStyle="None">
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="/Styles.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="350"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
         <Grid fw:PointerTracker.Enabled="True" Background="#FF111111">
-            <StackPanel>
-                <StackPanel Orientation="Horizontal">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal">
                     <TextBlock Margin="15" FontSize="16" Text="Action Recorder" VerticalAlignment="Center" Foreground="White" FontWeight="Bold"/>
                 </StackPanel>
-                
-                <TextBlock Text="Options" Margin="15" FontWeight="DemiBold" Foreground="#FFD6D6D6"/>
-                <ListView FontSize="12" Background="#FF1B1B1B" BorderBrush="#FF2B2B2B">
-                    <ListViewItem Padding="0" Focusable="False" Foreground="#FFC1C1C1" MouseUp="PlayOrStop">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon x:Name="_playIcon" Kind="PlayCircle" Margin="15"/>
-                            <TextBlock x:Name="_playTxt" Text="Play" VerticalAlignment="Center"/>
+                <ListView DockPanel.Dock="Top" FontSize="12" Background="#FF1B1B1B" BorderThickness="0">
+                    <ListViewItem Style="{StaticResource SideMenuItem}">
+                        <StackPanel Orientation="Vertical">
+                            <Button Click="OnClickPlayOrStop" Style="{StaticResource UnstyledButton}" Foreground="#FFC1C1C1" Width="348">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon x:Name="_playIcon" Kind="PlayCircle" Margin="15"/>
+                                    <TextBlock x:Name="_playTxt" Text="Play" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Click="OnClickLoop" Style="{StaticResource UnstyledButton}" Margin="45, 0, 0, 15">
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox x:Name="_loopCheckBox" Margin="0, 0, 5, 0" Background="#FFC1C1C1"></CheckBox>
+                                    <TextBlock Text="Loop" VerticalAlignment="Center" Foreground="#FFC1C1C1"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Click="OnClickSuppressMouseMovePath" Style="{StaticResource UnstyledButton}" Margin="45, 0, 0, 5">
+                                <StackPanel Orientation="Horizontal">
+                                    <CheckBox x:Name="_suppressMouseMovePathCheckBox" Margin="0, 0, 5, 0" Background="#FFC1C1C1"></CheckBox>
+                                    <TextBlock Text="Suppress mouse move path" VerticalAlignment="Center" Foreground="#FFC1C1C1"/>
+                                    <materialDesign:PackIcon Kind="Help" Foreground="#FFC1C1C1" Height="10" ToolTip="If checked, it will not replay mouse movement if no key is pressed." />
+                                </StackPanel>
+                            </Button>
+                            <Label Foreground="#FFC1C1C1" Margin="40, 0, 0, 0">Speed</Label>
+                            <ComboBox x:Name="_speedType" SelectionChanged="OnChangeSpeedType" Background="#FFC1C1C1" Margin="45, 0, 0, 15" Width="278" HorizontalAlignment="Left">
+                                <ComboBoxItem IsSelected="True">Normal</ComboBoxItem>
+                                <ComboBoxItem>Multiplier</ComboBoxItem>
+                                <ComboBoxItem>Fixed</ComboBoxItem>
+                            </ComboBox>
+                            <StackPanel x:Name="_speedMultiplierContainer" Orientation="Vertical">
+                                <Label x:Name="_speedMultiplierText" Foreground="#FFC1C1C1" Margin="40, 0, 0, 0"></Label>
+                                <StackPanel Orientation="Horizontal" Margin="40, 0, 0, 15">
+                                    <Label Foreground="#FFC1C1C1"  Padding="5, 0, 0, 0">Faster</Label>
+                                    <Slider Name="_speedMultiplier" Width="200" Orientation="Horizontal" Value="50" Minimum="1" Maximum="100" SmallChange="1" LargeChange="5" ValueChanged="OnChangeSpeedMultiplier" Margin="5, 0, 5, 0" />
+                                    <Label Foreground="#FFC1C1C1" Padding="0">Slower</Label>
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel x:Name="_speedFixedContainer" Orientation="Vertical">
+                                <Label x:Name="_speedFixedText" Foreground="#FFC1C1C1" Margin="40, 0, 0, 0"></Label>
+                                <StackPanel Orientation="Horizontal" Margin="40, 0, 0, 15">
+                                    <Label Foreground="#FFC1C1C1"  Padding="5, 0, 0, 0">Faster</Label>
+                                    <Slider Name="_speedFixed" Width="200" Orientation="Horizontal" Value="16.3" Minimum="1" Maximum="100" SmallChange="1" LargeChange="5" ValueChanged="OnChangeSpeedFixed" Margin="5, 0, 5, 0" />
+                                    <Label Foreground="#FFC1C1C1" Padding="0">Slower</Label>
+                                </StackPanel>
+                            </StackPanel>
                         </StackPanel>
                     </ListViewItem>
-                    <ListViewItem Padding="0" Focusable="False" MouseUp="Record" Foreground="#FFC1C1C1">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon x:Name="_recordIcon" Kind="Record" Margin="15"/>
-                            <TextBlock Text="Record" x:Name="_recordTxt" VerticalAlignment="Center"/>
-                        </StackPanel>
+                    <ListViewItem Style="{StaticResource SideMenuItem}">
+                        <Button Click="OnClickRecord" Style="{StaticResource UnstyledButton}" Foreground="#FFC1C1C1"  Width="348">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon x:Name="_recordIcon" Kind="Record" Margin="15"/>
+                                <TextBlock Text="Record" x:Name="_recordTxt" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </ListViewItem>
+                    <ListViewItem Style="{StaticResource SideMenuItem}">
+                        <Button Click="OnClickImport" Style="{StaticResource UnstyledButton}" Foreground="#FFC1C1C1" Width="348">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FileImportOutline" Margin="15"/>
+                                <TextBlock Text="Import Action File" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
+                    </ListViewItem>
+                    <ListViewItem Style="{StaticResource SideMenuItem}">
+                        <Button Click="OnClickExport" Style="{StaticResource UnstyledButton}" Foreground="#FFC1C1C1" Width="348">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FileExportOutline" Margin="15"/>
+                                <TextBlock Text="Export Action File" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                     </ListViewItem>
                 </ListView>
-                
-                <TextBlock Text="Import" Margin="15" FontWeight="DemiBold" Foreground="#FFD6D6D6"/>
-                <ListView FontSize="12" Background="#FF1B1B1B" BorderBrush="#FF2B2B2B">
-                    <ListViewItem Padding="0" Focusable="False" MouseUp="ImportAction" Foreground="#FFC1C1C1">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="FileImportOutline" Margin="15"/>
-                            <TextBlock Text="Import Action File" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ListViewItem>
-                </ListView>
-                <TextBlock Text="Export" Margin="15" FontWeight="DemiBold" Foreground="#FFD6D6D6"/>
-                <ListView FontSize="12" Background="#FF1B1B1B" BorderBrush="#FF2B2B2B">
-                    <ListViewItem Padding="1" Focusable="False" MouseUp="ExportAction" Foreground="#FFC1C1C1">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="FileExportOutline" Margin="15"/>
-                            <TextBlock Text="Export Action File" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </ListViewItem>
-                </ListView>
-                <ListView Height="151" Background="{x:Null}" Foreground="{x:Null}" BorderBrush="{x:Null}"></ListView>
-                <ListView FontSize="14" VerticalAlignment="Bottom" Background="#FF0C0C0C" BorderBrush="#FF080808" Foreground="{x:Null}">
+                <ListView DockPanel.Dock="Bottom" FontSize="14" VerticalAlignment="Bottom" Background="#FF0C0C0C" BorderBrush="#FF080808" Foreground="{x:Null}">
                     <ListViewItem Padding="1" Focusable="False" MouseUp="Close" Foreground="#FFC1C1C1">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="ExitToApp" Margin="15"/>
-                            <TextBlock Margin="0,0,0,1" Text="Close" VerticalAlignment="Center"/>
-                        </StackPanel>
+                        <Button Click="OnClickExport" Style="{StaticResource UnstyledButton}" Foreground="#FFC1C1C1" Width="342">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="ExitToApp" Margin="15"/>
+                                <TextBlock Margin="0,0,0,1" Text="Close" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
                     </ListViewItem>
                 </ListView>
-            </StackPanel>
+            </DockPanel>
         </Grid>
         <Grid Grid.Column="1" Background="#FF0E0E0E">
             <TextBlock FontWeight="Bold" FontSize="16" Text="Log" VerticalAlignment="Center" Margin="25,10,25,563" Foreground="#FFCBCBCB" Height="25"/>
             <StackPanel Orientation="Vertical">
-            <TextBox x:Name="_logger" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" Focusable="false" IsReadOnly="true" Padding="15" Height="452" Margin="25,41,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="680" Background="#FF131313" Foreground="#FF9B9B9B" BorderBrush="#FF2B2B2B" FontStyle="Italic"/>
-            <TextBox x:Name="_command" MouseDown="OnCommandClick" KeyUp="OnCommand" TextWrapping="NoWrap" Text="command" Margin="25, 10, 25, 0" Padding="7, 2, 7, 2" Height="25" Background="#FF131313" Foreground="#FF9B9B9B" BorderBrush="#FF2B2B2B"/>
+                <TextBox x:Name="_logger" AcceptsReturn="True" VerticalScrollBarVisibility="Visible" HorizontalAlignment="Left" Focusable="false" IsReadOnly="true" Padding="15" Height="535" Margin="25,41,0,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" Width="680" Background="#FF131313" Foreground="#FF9B9B9B" BorderBrush="#FF2B2B2B" FontStyle="Italic"/>
             </StackPanel>
         </Grid>
     </Grid>
