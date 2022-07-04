@@ -19,6 +19,7 @@ This is a project for creating a macro, aimed at those who need to automate some
 
 ## Next to-do list
 - [ ] Migrate to latest .NET version and use UWP.
+- [ ] Logging is not impacting too much on performance, but it is still a problem, it still cannot log in real-time.
 
 ## License
 
