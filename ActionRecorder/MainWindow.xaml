@@ -101,8 +101,8 @@
                     </ListViewItem>
                 </ListView>
                 <ListView DockPanel.Dock="Bottom" FontSize="14" VerticalAlignment="Bottom" Background="#FF0C0C0C" BorderBrush="#FF080808" Foreground="{x:Null}">
-                    <ListViewItem Padding="1" Focusable="False" MouseUp="Close" Foreground="#FFC1C1C1">
-                        <Button Click="OnClickExport" Style="{StaticResource UnstyledButton}" Foreground="#FFC1C1C1" Width="342">
+                    <ListViewItem Padding="1" Focusable="False" Foreground="#FFC1C1C1">
+                        <Button Click="OnClickClose" Style="{StaticResource UnstyledButton}" Foreground="#FFC1C1C1" Width="342">
                             <StackPanel Orientation="Horizontal">
                                 <materialDesign:PackIcon Kind="ExitToApp" Margin="15"/>
                                 <TextBlock Margin="0,0,0,1" Text="Close" VerticalAlignment="Center"/>

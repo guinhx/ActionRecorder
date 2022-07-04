@@ -128,7 +128,7 @@ namespace ActionRecorder
                 _logger.ScrollToEnd();
             }, DispatcherPriority.Background));
 
-        private void Close(object sender, MouseButtonEventArgs e) =>
+        private void OnClickClose(object sender, RoutedEventArgs e) =>
             System.Windows.Application.Current.Shutdown();
 
         private void OnClickLoop(object sender, RoutedEventArgs e) =>
