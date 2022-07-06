@@ -1,5 +1,7 @@
 ﻿using MaterialDesignThemes.Wpf;
 using System;
+using System.Collections.Concurrent;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -15,11 +17,16 @@ namespace ActionRecorder
     {
         private readonly Application _application;
 
+        public const int LOGS_REFRESH_TICK_RATE = 30;
+        private readonly ConcurrentQueue<string> _logsRenderQueue = new ConcurrentQueue<string>();
+        private CancellationTokenSource _logsRendererCancelationToken;
+
         public MainWindow()
         {
             InitializeComponent();
             _application = new Application(this);
             Update();
+            _ = StartLogsRenderCycle();
         }
 
         private void Window_MouseDown(object sender, MouseButtonEventArgs e)
@@ -118,18 +125,25 @@ namespace ActionRecorder
         private void OnClickExport(object sender, RoutedEventArgs e) =>
             _application.ExportAction();
 
-        public void ClearLog() =>
+        public void ClearLog()
+        {
+            _logsRendererCancelationToken?.Cancel();
+            while (!_logsRenderQueue.IsEmpty)
+                _logsRenderQueue.TryDequeue(out _);
             _logger.Clear();
+            _ = StartLogsRenderCycle();
+        }
 
-        public async Task LogMessage(string message) =>
-            await Task.Run(() => _logger.Dispatcher.Invoke(() =>
-            {
-                _logger.AppendText(message + Environment.NewLine);
-                _logger.ScrollToEnd();
-            }, DispatcherPriority.Background));
+        public void LogMessage(string message) =>
+            _logsRenderQueue.Enqueue(message + Environment.NewLine);
 
-        private void OnClickClose(object sender, RoutedEventArgs e) =>
+        private void OnClickClose(object sender, RoutedEventArgs e)
+        {
+            _logsRendererCancelationToken?.Cancel();
+            // Waiting to stop rendering logs to prevent exception
+            Thread.Sleep(1000);
             System.Windows.Application.Current.Shutdown();
+        }
 
         private void OnClickLoop(object sender, RoutedEventArgs e) =>
             _application.Loop = !_application.Loop;
@@ -145,5 +159,44 @@ namespace ActionRecorder
 
         private void OnChangeSpeedFixed(object sender, RoutedPropertyChangedEventArgs<double> e) =>
             Update();
+
+        private async Task StartLogsRenderCycle()
+        {
+            _logsRendererCancelationToken = new CancellationTokenSource();
+            await LogsRenderCycle(_logsRendererCancelationToken.Token);
+        }
+
+        private async Task LogsRenderCycle(CancellationToken cancelationToken)
+        {
+            await Task.Run(async () =>
+            {
+                var beingRendered = false;
+                while (!cancelationToken.IsCancellationRequested)
+                {
+                    if (beingRendered)
+                        return;
+
+                    beingRendered = true;
+                    try
+                    {
+                        _logger.Dispatcher.Invoke(() =>
+                        {
+                            var logs = string.Empty;
+                            while (_logsRenderQueue.TryDequeue(out var log))
+                                logs += log;
+                            if (logs.Length == 0)
+                                return;
+                            _logger.AppendText(logs);
+                            _logger.ScrollToEnd();
+                        }, DispatcherPriority.Background);
+                    }
+                    finally
+                    {
+                        beingRendered = false;
+                    }
+                    await Task.Delay(1000 / LOGS_REFRESH_TICK_RATE);
+                }
+            });
+        }
     }
 }

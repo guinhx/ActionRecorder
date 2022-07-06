@@ -12,7 +12,6 @@ namespace ActionRecorder
     public class Application
     {
         private readonly MainWindow _mainWindow;
-        public const int TICK_RATE = 60;
         private Thread _playbackThread;
         private Thread _parseThread;
         private Thread _exportThread;
@@ -348,28 +347,28 @@ namespace ActionRecorder
         public void Log(string message)
         {
             message = $@"[LOG] {message}";
-            _ = _mainWindow.LogMessage(message);
+            _mainWindow.LogMessage(message);
             Console.WriteLine(message);
         }
 
         public void Info(string message)
         {
             message = $@"[INFO] {message}";
-            _ = _mainWindow.LogMessage(message);
+            _mainWindow.LogMessage(message);
             Console.WriteLine(message);
         }
 
         public void Warn(string message)
         {
             message = $@"[WARN] {message}";
-            _ = _mainWindow.LogMessage(message);
+            _mainWindow.LogMessage(message);
             Console.WriteLine(message);
         }
 
         public void Error(string message)
         {
             message = $@"[ERROR] {message}";
-            _ = _mainWindow.LogMessage(message);
+            _mainWindow.LogMessage(message);
             Console.WriteLine(message);
         }
     }
