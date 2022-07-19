@@ -141,7 +141,7 @@ namespace ActionRecorder
         {
             _logsRendererCancelationToken?.Cancel();
             // Waiting to stop rendering logs to prevent exception
-            Thread.Sleep(1000);
+            Thread.Sleep((1000 / LOGS_REFRESH_TICK_RATE) + 1);
             System.Windows.Application.Current.Shutdown();
         }
 
